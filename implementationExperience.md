@@ -80,8 +80,7 @@ For the Host mode, we will look for the steps proposed by Newracoms in their Git
 - Execute:
   - ``cd /boot/overlays`` OK
   - ``sudo dtc -I dts -O dtb -o newracom.dtbo newracom.dts`` FATAL ERROR: "newracom.dts": No such file or directory.
-    - I changed the command to  ``sudo dtc -I dts -O dtb -o newracom.dtbo ~/nrc7292_sw_pkg-master/dts
-/newracom.dts`` for the command to correctly locate the input file.
+    - I changed the command to  ``sudo dtc -I dts -O dtb -o newracom.dtbo ~/nrc7292_sw_pkg-master/dts/newracom.dts`` for the command to correctly locate the input file.
     - Command was executed and threw a warning message: "/home/pi/nrc7292_sw_pkg-master/dts
 /newracom.dts:16.12-18.6: Warning (unit_address_cs_reg): /fragment@0/__overlay/__spidev@0: node has a unit name, but no reg or ranges property"
     - Inspecting /boot/overlays I find a file called "newracom.dtbo", so let's say that we can move forward.
@@ -130,6 +129,7 @@ For the Host mode, we will look for the steps proposed by Newracoms in their Git
 
 Before continuing with the troubleshooting I will set up a sencond Raspberry Pi. For the AP I would expect to have a different config since it will be responsible for the IP assignment. Maybe I am missing setting an a fixed IP for the AP since no one is assigning it an IP. Still, due to the way the "start" command is proposed to be executed, does not seem that it should be done. Anyway, I will check.
 
+### 2nd Raspberry Pi
 
 SD Card formatting
 - All partitions deleted
@@ -139,4 +139,59 @@ Raspberry Pi 1st start:
 - Set up prepared: Raspbeeey Pi + SD Card + Mouse + Keyboard + Antenna 868 MHz + Power supply
 - Raspberry 1st start: Mouse not recornized (it works with my laptop though...)
  - Steps: same as before. No update check, no WiFi connection configured for the moment.
- - Next: change mouse, attach to WiFi and reach the same step as with the other Raspberry Pi (from now on R-01)
+ - Next: change mouse, attach to WiFi and reach the same step as with the other Raspberry Pi (from now on R-01) --  Got the mouse!
+Configuring the Raspberry Pi after 1st start (i.e., continue with Newracom steps)
+ - We will work in Host mode as well.
+ - Provide internet connenction with cellphone
+ - Access and download repository
+
+ 
+ - Open CLI -> Locate the downloaded file in the Downloads' folder -> Move the file to ~/ ``mv nrc7292_sw_pkg-master.zip ~/``
+- Unzip the file ``unzip nrc7292_sw_pkg-master.zip`` (takes ~1 minute)
+- Execute:
+  - ``cd /boot/overlays`` OK
+  - ``sudo dtc -I dts -O dtb -o newracom.dtbo newracom.dts`` FATAL ERROR: "newracom.dts": No such file or directory.
+    - I changed the command to  ``sudo dtc -I dts -O dtb -o newracom.dtbo ~/nrc7292_sw_pkg-master/dts/newracom.dts`` for the command to correctly locate the input file.
+    - Command was executed and threw a warning message: "/home/pi/nrc7292_sw_pkg-master/dts
+/newracom.dts:16.12-18.6: Warning (unit_address_cs_reg): /fragment@0/__overlay/__spidev@0: node has a unit name, but no reg or ranges property"
+    - Inspecting /boot/overlays I find a file called "newracom.dtbo", so let's say that we can move forward.
+  - Config file edition
+   - Go to the folder ``cd /boot/firmware`` Make a copy of the config file ``sudo cp config.txt config.txt.old``
+  - Next command is ``sudo vi config.txt`` + adding the line ``dtoverlay=newracom`` after the lines ``[cm5]`` and ``dtoverlay=dwc2,dr_mode=host``, and before ``[all]``. Escape the insert mode with the "ESC" key, then save and exit the file with the ``:wq`` command. Re-enter the file and check thqt the edition is good.
+- Now the **Install release package** step
+ - I created the new folder ``~/sw_pkg`` with ``mkdir -p ~/sw_pkg``
+ - Copied the ``sw_pkg`` folder in the new location: ``cp -r ~/nrc7292_sw_pkg-master/package/evk/sw_pkg/* ~/sw_pkg``
+ - I change location to the new folder: ``cd ~/sw_pkg``
+ - Run the command ``chmod +x ./update.sh`` -> OK
+ - Run the command ``./update.sh`` -> OK
+- Step **(Optional) Install firmware/driver/cli_app binaries** -> DONE
+ - ``cd  ~/nrc7292_sw_pkg-master/package/evk/binary``
+ - ``cp ./cli_app ~/nrc_pkg/script`` -> OK
+ - ``cp ./nrc.ko ~/nrc_pkg/sw/driver`` -> OK
+ - ``cp ./nrc7292_cspi.bin ~/nrc_pkg/sw/firmware`` -> OK
+- Step **(Optional) Build host driver** -> **NOT** DONE
+- Step **Apply a specific package** -> **NOT** DONE
+ - What is my current package ? Version 1.5.2, checked on the ``README.md`` file at ``~/nrc7292_sw_pkg-master/``
+- The moment of truth: **Run NRC7292 Software Package**
+ - **Configure start script**
+  - Start parameter can be changed with: ``vi nrc_pkg/script/start.py`` -> No changes done, just inspected it.
+ - **Test run**
+  - To run an **AP** we will use the following command:
+   - ``cd ~/nrc_pkg/script``
+   - Run ``./start.py 1 0 EU`` -> This means: _OPEN_ mode _AP_ for _Europe_
+    - Results:
+     - "Selected interface 'wlan0' OK (2 times) - Beacause I'm connected to a WiFi Legacy network for internet connection.
+     - "sudo: iptables: command not found" (2 times)
+     - "Failed to stop dhcpcd.service: Unit dhcpcd.service not loaded."
+     - "Failed to stop dnsmasq.service: Unit dnsmasq.service not loaded."
+    - So, I install iptables ``sudo apt install iptables`` -> Installation OK
+    - Run again ``./start.py 1 0 EU``
+     - No more "sudo: iptables: command not found" error message
+     - Still having both "Failed to stop dhcpcd.service: Unit **dhcpcd.service** not loaded." & "Failed to stop **dnsmasq.service**: Unit dnsmasq.service not loaded."
+     - Config files of both services are available at ``/etc`` (see ``dhcpcd.conf`` and ``dnsmasq.conf``)
+    - Tried ``./start.py 0 0 EU``  -> This means: _OPEN_ mode _STA_ for _Europe_
+     - Same errors: "Failed to stop dhcpcd.service: Unit **dhcpcd.service** not loaded." & "Failed to stop **dnsmasq.service**: Unit dnsmasq.service not loaded."
+     - Program does not finish and waits for IP.
+     - Actually, that would be alright, since in the end is the Halow AP who will provide the IP. Apparently, both WiFI legacy and WiFi Halow use the same service (dhcpcd).
+    
+I will need to pay attencion to the linux version on the RPi3 and follow the integration guide of Newracom UG-7292-018-Raspberry_Pi_setup "NRC7292 Evaluation Kit User Guide (Raspberry Pi setup)".
