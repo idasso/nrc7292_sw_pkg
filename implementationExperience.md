@@ -195,3 +195,20 @@ Configuring the Raspberry Pi after 1st start (i.e., continue with Newracom steps
      - Actually, that would be alright, since in the end is the Halow AP who will provide the IP. Apparently, both WiFI legacy and WiFi Halow use the same service (dhcpcd).
     
 I will need to pay attencion to the linux version on the RPi3 and follow the integration guide of Newracom UG-7292-018-Raspberry_Pi_setup "NRC7292 Evaluation Kit User Guide (Raspberry Pi setup)".
+
+Update May-15 2025: S achieved to have a working unit. The current issue has to do with the current version of Linux being used (Raspberry Pi OS with desktop; Release date: May 13th 2025; System: 3 2-bitKernel version: 6.12; Debian version: 12 (bookworm)). He recompiled the SW using an older vesion and it worked perfectly on a single node. We will clone the SD Card and test a link between two stations (STA+AP). In paralel S will compile the application with a more recent Linux version for the Raspberry Pi so we can work with the most recent compatible version.
+
+Update May-16 2025: SD Cardcloning process
+ - [Steps followed](https://raspberrytips.com/how-to-clone-raspberry-pi-sd-card/#clone-sd-card-using-win32-disk-imager-windows) for image creation
+  - Image creation based on S's succesful implementation: OK. Image name: "2025-05-15_RPiHalowImage.img" Available at I's PC. Took ~6 minutes.
+  - Image writing on a new SD Card: OK. Took ~20 minutes.
+  - Boot crashes
+  - Did not work
+ - [New steps followed](https://www.tomshardware.com/how-to/back-up-raspberry-pi-as-disk-image)
+  - Format a USB Flash in NTFS (option for Windows users). I'll call it piHalow.
+  - Issue when connecting the Raspberry that S prepared due to the config used.
+  - Path not followed
+S has prepared the SD cards with his PC.
+We have found that is not possible to flash a SD card that works independently of the Raspberry Pi used. Therefore we changed the flashing done to the SD cards in order to only be a software image that we know that is compatible with the Newracom drivers. So we work with linux version 6.1. We move forward towards the procedure proposed at "UG-7292-018-Raspberry_Pi_setup.pdf". Aparently there's a file called ()_
+
+We are going to work with all 6.1 versions of Linux. We will continue to set up the rest of the boards, then we will put toghether a network with one STA, one AP and a sniffer.
