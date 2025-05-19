@@ -209,6 +209,111 @@ Update May-16 2025: SD Cardcloning process
   - Issue when connecting the Raspberry that S prepared due to the config used.
   - Path not followed
 S has prepared the SD cards with his PC.
-We have found that is not possible to flash a SD card that works independently of the Raspberry Pi used. Therefore we changed the flashing done to the SD cards in order to only be a software image that we know that is compatible with the Newracom drivers. So we work with linux version 6.1. We move forward towards the procedure proposed at "UG-7292-018-Raspberry_Pi_setup.pdf". Aparently there's a file called ()_
+
+We have found that is not possible to flash a SD card that works independently of the Raspberry Pi used. Therefore we changed the flashing done to the SD cards in order to only be a software image that we know that is compatible with the Newracom drivers. So we work with linux version 6.1. We move forward towards the procedure proposed at "UG-7292-018-Raspberry_Pi_setup.pdf".
 
 We are going to work with all 6.1 versions of Linux. We will continue to set up the rest of the boards, then we will put toghether a network with one STA, one AP and a sniffer.
+
+###Basic operational network
+
+We have two nodes working at the lab. ONe as AP, the other as a STA.
+
+Config AP:
+- Linux version 6.1
+- User: pi
+- Pass: rtlry
+- Commands for starting the node:
+```
+cd ~/nrc_pkg/script/
+./start.py 1 0 EU
+```
+- Commands for stopping the node:
+```
+./stop.py
+```
+
+###Node set up
+The document to follow in this instance is the "UG-7292-018-Raspberry_Pi_setup" by Newracom. We are going to have to pay attention to a database file called "(?)_bd.dat". Since the HAT we are using is manufactured by ALFA using Newracom's chip, this specific should be retrieved from ALFA's files.
+
+So, last time I finished the step 3.1 in "UG-7292-018-Raspberry_Pi_setup" called "Enable the required interfaces". The issue here is since we do not have an open Ethernet connection we use a WiFi link using our cellphones. So we need to address all the internet-related steps before deactivationg the Wifi interface.
+
+Steps requiring internet connection
+- Step 3.2:
+ - ``sudo apt update``
+ - ``sudo apt upgrade``
+ - ``sudo apt install raspberrypi-bootloader raspberrypi-kernel``
+ - ``sudo apt install raspberrypi-kernel-headers``
+ - ``sudo apt install vim iperf iperf3``
+- Step Kernel Build (Optional): for the moment we are not going to follow it.
+- Step 3.3 "Disable Broadcom Wi-Fi and Bluetooth": we will evaluate if we can postpone this step without major issues  
+- Step 3.4 "Disable User mode SPI device driver" no internet-related steps
+- Step 3.5 "Packages and configurations required for Newracom Wi-Fi"
+ - ``sudo apt install hostapd dnsmasq``
+- "4.1 Download and install the package from GitHub repository"
+ - ``git clone https://github.com/newracom/nrc7292_sw_pkg.git`` This is the last step that requires internet.
+
+I try to do the internet related steps in advance, so that I deviate as minimum as possible from the procedure.
+- ``uname -a`` response: Linux ietr 6.1.27-v7+ #1642 SMP Mon Apr 3 17:20:52 BST 2023 armv7l GNU/Linux
+- ``ls -l /lib/modules`` response 6.1.21+, 6.1.21-v7+, 6.1.21-v7l+, 6.1.21-v8+
+- ``sudo apt install raspberrypi-bootloader raspberrypi-kernel`` response: already up to date
+- I did the reboot anyway and follow the steps
+- ``sudo apt install raspberrypi-kernel-headers``: OK
+- ``ls -l /usr/src`` response: linux-headers-6.1.21+, linux-headers-6.1.21-v7+, linux-headers-6.1.21-v7l+, sense-hat
+- ``sudo apt install vim iperf iperf3``: failed vim & iperf3 install. I ran ``sudo apt update`` and the re-ran the command: OK
+- I will run the command ``sudo apt install hostapd dnsmasq`` now: OK
+- Download the repository from git: ``git clone https://github.com/newracom/nrc7292_sw_pkg.git``
+- Once the repository is cloned I will continue with the step 3.3
+ - ``ls -l /boot/overlays/disable-*``: apart from "disable-bt.dtbo" and "disqble-wifi.dtbo", there is a "disable-emmc2.dtbo" file also
+ - ``sudo vim /boot/config.txt`` I used "nano" instead of "vim" just because I like it better: I added the 3 lines at the end leaving a line in between the original code and the added lines.
+ - ``sudo reboot``: no more wifi, nor Bluetooth, nor spi-dev. Pop up notifications at desktop confirmed the unavailability of these interfaces.  
+ - ``ifconfig -a`` only "eth0" and "lo" apper as available
+- Step 3.4
+ - I used as a template the file "newracom_for_5.16_or_later.dts" in ~/nrc7292_sw_pkg/dts copied and pasted it in ~/ and added 3 missing lines:
+```
+spidev@1{
+ status = "disabled";
+};
+```
+ - ``dtc -I dts -O dtb -o newracom.dtbo newracom.dts``: OK, two warnings popped up, no action taken.
+  - ``/fragment0/__overlay__/spidev@0: node has a unit name, buit no reg property``
+  - ``/fragment0/__overlay__/spidev@1: node has a unit name, buit no reg property``
+ - ``sudo cp newracom.dtbo /boot/overlays/``: OK
+ - ``sudo nano /boot/config.txt``
+  - I will erase the  ``dtoverlay= pi3-disable-spidev`` that I have added and then written the ``dtoverlay=newracom`` line
+  - ``sudo reboot``
+  - ``ls -l /dev/spidev*``: OK, I received the response expected:  "ls: cannot access '/dev/spidev*': No such file or directory"
+- Step 3.5
+```
+cd /etc/wpa_supplicant/
+sudo mv wpa_supplicant.conf wpa_supplicant.conf.unused
+```
+ - OK
+ - ``sudo nano /etc/modules``: OK
+ - ``sudo nano /etc/modprobe.d/raspi-blacklist.conf`` : OK
+- Step 4.1
+ - ``cd nrc7292_sw_pkg/package/evk/sw_pkg``
+ - ``chmod +x update.sh``: OK
+ - ``./update.sh``: OK
+- Step 4.2
+ - ``cd ~/ nrc7292_sw_pkg/package/src/nrc``
+ - ``make``: OK
+ - ``cp -b nrc.ko ~/nrc_pkg/sw/driver``
+ - ``ls -l ~/nrc_pkg/sw/driver``: OK, response expected. There is also a README file.
+- Step 4.3 "Start Newracom Wi-Fi in AP or STA mode": Please refer to the Host Mode User Guide on how to get started.
+ - I'm going to try to lauch the AP with ``./start.py 1 0 EU`` at ``~/nrc_pkg/script``
+  - Launch failed. Console messages:
+```
+...
+[2] Set initial country
+[3] Loading module
+sudo insmod /home/pi/nrc_pkg/sw/driver/nrc.ko fw_name=uni_s1g.bin bss_max_idle=1800 ndp_preq=1 listen_interval=1000 bd_name=nrc7292_bd.dat
+insmod: ERROR: could no insert module /home/pi/nrc_pkg/sw/driver/nrc.ko: Unknown symbol in module
+wlan0: ERROR while getting interface flags: no such device
+rmmod: ERROR: Module nrc is not currently loaded
+```
+ - Reboot & check switch: switch was on "Standalone", changed to "Host" 
+ - Launch retry: SUCCESS
+ - I have lauched the other two RPis as well, so I have the following setup:
+  - Far right (this last one) | Mode AP | MAC: ``44:c3:06:00:08:ee`` | IP: 192.168.200.1
+  - Middle | Mode STA | MAC: ``44:c3:06:00:08:f0`` | IP: 192.168.200.29
+  - Far left | Mode STA | MAC: ``44:c3:06:00:08:ea`` | IP: 192.168.200.23 
