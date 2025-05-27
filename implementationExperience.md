@@ -214,7 +214,7 @@ We have found that is not possible to flash a SD card that works independently o
 
 We are going to work with all 6.1 versions of Linux. We will continue to set up the rest of the boards, then we will put toghether a network with one STA, one AP and a sniffer.
 
-###Basic operational network
+### Basic operational network
 
 We have two nodes working at the lab. ONe as AP, the other as a STA.
 
@@ -232,25 +232,25 @@ cd ~/nrc_pkg/script/
 ./stop.py
 ```
 
-###Node set up
+### Node set up
 The document to follow in this instance is the "UG-7292-018-Raspberry_Pi_setup" by Newracom. We are going to have to pay attention to a database file called "(?)_bd.dat". Since the HAT we are using is manufactured by ALFA using Newracom's chip, this specific should be retrieved from ALFA's files.
 
 So, last time I finished the step 3.1 in "UG-7292-018-Raspberry_Pi_setup" called "Enable the required interfaces". The issue here is since we do not have an open Ethernet connection we use a WiFi link using our cellphones. So we need to address all the internet-related steps before deactivationg the Wifi interface.
 
 Steps requiring internet connection
 - Step 3.2:
- - ``sudo apt update``
- - ``sudo apt upgrade``
- - ``sudo apt install raspberrypi-bootloader raspberrypi-kernel``
- - ``sudo apt install raspberrypi-kernel-headers``
- - ``sudo apt install vim iperf iperf3``
+  - ``sudo apt update``
+  - ``sudo apt upgrade``
+  - ``sudo apt install raspberrypi-bootloader raspberrypi-kernel``
+  - ``sudo apt install raspberrypi-kernel-headers``
+  - ``sudo apt install vim iperf iperf3``
 - Step Kernel Build (Optional): for the moment we are not going to follow it.
 - Step 3.3 "Disable Broadcom Wi-Fi and Bluetooth": we will evaluate if we can postpone this step without major issues  
 - Step 3.4 "Disable User mode SPI device driver" no internet-related steps
 - Step 3.5 "Packages and configurations required for Newracom Wi-Fi"
- - ``sudo apt install hostapd dnsmasq``
+  - ``sudo apt install hostapd dnsmasq``
 - "4.1 Download and install the package from GitHub repository"
- - ``git clone https://github.com/newracom/nrc7292_sw_pkg.git`` This is the last step that requires internet.
+  - ``git clone https://github.com/newracom/nrc7292_sw_pkg.git`` This is the last step that requires internet.
 
 I try to do the internet related steps in advance, so that I deviate as minimum as possible from the procedure.
 - ``uname -a`` response: Linux ietr 6.1.27-v7+ #1642 SMP Mon Apr 3 17:20:52 BST 2023 armv7l GNU/Linux
@@ -263,12 +263,12 @@ I try to do the internet related steps in advance, so that I deviate as minimum 
 - I will run the command ``sudo apt install hostapd dnsmasq`` now: OK
 - Download the repository from git: ``git clone https://github.com/newracom/nrc7292_sw_pkg.git``
 - Once the repository is cloned I will continue with the step 3.3
- - ``ls -l /boot/overlays/disable-*``: apart from "disable-bt.dtbo" and "disqble-wifi.dtbo", there is a "disable-emmc2.dtbo" file also
- - ``sudo vim /boot/config.txt`` I used "nano" instead of "vim" just because I like it better: I added the 3 lines at the end leaving a line in between the original code and the added lines.
- - ``sudo reboot``: no more wifi, nor Bluetooth, nor spi-dev. Pop up notifications at desktop confirmed the unavailability of these interfaces.  
- - ``ifconfig -a`` only "eth0" and "lo" apper as available
+  - ``ls -l /boot/overlays/disable-*``: apart from "disable-bt.dtbo" and "disqble-wifi.dtbo", there is a "disable-emmc2.dtbo" file also
+  - ``sudo vim /boot/config.txt`` I used "nano" instead of "vim" just because I like it better: I added the 3 lines at the end leaving a line in between the original code and the added lines.
+  - ``sudo reboot``: no more wifi, nor Bluetooth, nor spi-dev. Pop up notifications at desktop confirmed the unavailability of these interfaces.  
+  - ``ifconfig -a`` only "eth0" and "lo" apper as available
 - Step 3.4
- - I used as a template the file "newracom_for_5.16_or_later.dts" in ~/nrc7292_sw_pkg/dts copied and pasted it in ~/ and added 3 missing lines:
+  - I used as a template the file "newracom_for_5.16_or_later.dts" in ~/nrc7292_sw_pkg/dts copied and pasted it in ~/ and added 3 missing lines:
 ```
 spidev@1{
  status = "disabled";
@@ -287,21 +287,21 @@ spidev@1{
 cd /etc/wpa_supplicant/
 sudo mv wpa_supplicant.conf wpa_supplicant.conf.unused
 ```
- - OK
- - ``sudo nano /etc/modules``: OK
- - ``sudo nano /etc/modprobe.d/raspi-blacklist.conf`` : OK
+  - OK
+  - ``sudo nano /etc/modules``: OK
+  - ``sudo nano /etc/modprobe.d/raspi-blacklist.conf`` : OK
 - Step 4.1
- - ``cd nrc7292_sw_pkg/package/evk/sw_pkg``
- - ``chmod +x update.sh``: OK
- - ``./update.sh``: OK
+  - ``cd nrc7292_sw_pkg/package/evk/sw_pkg``
+  - ``chmod +x update.sh``: OK
+  - ``./update.sh``: OK
 - Step 4.2
- - ``cd ~/ nrc7292_sw_pkg/package/src/nrc``
- - ``make``: OK
- - ``cp -b nrc.ko ~/nrc_pkg/sw/driver``
- - ``ls -l ~/nrc_pkg/sw/driver``: OK, response expected. There is also a README file.
+  - ``cd ~/ nrc7292_sw_pkg/package/src/nrc``
+  - ``make``: OK
+  - ``cp -b nrc.ko ~/nrc_pkg/sw/driver``
+  - ``ls -l ~/nrc_pkg/sw/driver``: OK, response expected. There is also a README file.
 - Step 4.3 "Start Newracom Wi-Fi in AP or STA mode": Please refer to the Host Mode User Guide on how to get started.
- - I'm going to try to lauch the AP with ``./start.py 1 0 EU`` at ``~/nrc_pkg/script``
-  - Launch failed. Console messages:
+  - I'm going to try to lauch the AP with ``./start.py 1 0 EU`` at ``~/nrc_pkg/script``
+   - Launch failed. Console messages:
 ```
 ...
 [2] Set initial country
@@ -314,6 +314,23 @@ rmmod: ERROR: Module nrc is not currently loaded
  - Reboot & check switch: switch was on "Standalone", changed to "Host" 
  - Launch retry: SUCCESS
  - I have lauched the other two RPis as well, so I have the following setup:
-  - Far right (this last one) | Mode AP | MAC: ``44:c3:06:00:08:ee`` | IP: 192.168.200.1
-  - Middle | Mode STA | MAC: ``44:c3:06:00:08:f0`` | IP: 192.168.200.29
-  - Far left | Mode STA | MAC: ``44:c3:06:00:08:ea`` | IP: 192.168.200.23 
+   - Far right (this last one) | Mode AP | MAC: ``44:c3:06:00:08:ee`` | IP: 192.168.200.1
+   - Middle | Mode STA | MAC: ``44:c3:06:00:08:f0`` | IP: 192.168.200.29
+   - Far left | Mode STA | MAC: ``44:c3:06:00:08:ea`` | IP: 192.168.200.23
+  
+Update from May 23th:
+- S has prepared all 5 RPis available with the same software (Linux 6.1)
+
+Update from May 27th:
+- Tested system operation with the updated setup: OK
+- S used US frequencies on his tests, I've tried with EU frequency (channel 36).
+  - Start commands used:
+    - STA: ``./start.py 0 0 EU``
+    - AP: ``./start.py 1 0 EU``
+    - Sniffer: ``./start.py 2 0 EU 36 0``
+  - Then I've run a ping command between AP and STA and saw the sniffing results: OK, the sniffer was capable of catching the messages in the wireshark interface.
+- Regarding the attack, I want to replicate the scenario, therefor I need to set up a exchange od UDP packages between the AP and the STA. TO be more consistent with the simularion those should be packages sent only one way from STA to AP.
+- To install a UDP service I'm thinking of working with [this](https://wiki.python.org/moin/UdpCommunication) and [this](https://forums.raspberrypi.com/viewtopic.php?t=319674)
+- Another idea in mind is set up an [Express](https://expressjs.com/) app and create a web server that do some exchange between STA and AP or between STA and other STA.
+- For any of the previous proposal we'll need internet access to allow us to download packages for implementing any app. Hopefully tomorrow we'll have an update from the IT team.
+- Once the service is placed we need to execute the attack, so we may need to creat an additional services that crashes the app based on the same principle of the referenced article. How we'll do that? No one knows... YET!
